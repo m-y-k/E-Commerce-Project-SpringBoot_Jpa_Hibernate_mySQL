@@ -13,6 +13,8 @@ import com.example.Caravan.Service.Interface.OrderServiceInt;
 import com.example.Caravan.Transformer.ItemTransformer;
 import com.example.Caravan.Transformer.OrderTransformer;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 import java.util.Date;
@@ -30,6 +32,9 @@ public class OrderServiceImpl implements OrderServiceInt {
     CardRepository cardRepository;
     @Autowired
     OrderRepository orderRepository;
+
+    @Autowired
+    JavaMailSender mailSender;
 
     public OrderResponseDto placeOrder(OrderRequestDto orderRequestDto){
         Customer customer = customerRepository.findByEmailId(orderRequestDto.getCustomerEmailId());
@@ -70,6 +75,20 @@ public class OrderServiceImpl implements OrderServiceInt {
 
         customer.getOrders().add(savedOrder);
         product.getItems().add(savedOrder.getItems().get(0));
+
+        // Send email to user confirming his order
+        String text = "Congratulations, your order is booked with username -" + order.getCustomer().getName()
+                + " Your order id is - " + order.getId() + "."
+                + " The amount of your order is " + order.getTotalValue()
+                + " and th eordered date is - " + order.getOrderDate()
+                + " and the card used is - " + order.getCardUsed();
+
+        SimpleMailMessage message = new SimpleMailMessage();
+        message.setFrom("myk220897@gmail.com");
+        message.setTo(order.getCustomer().getName());
+        message.setSubject("Your Vaccination is booked successfully!!");
+        message.setText(text);
+        mailSender.send(message);
 
         return OrderTransformer.orderToOrderResponseDto(order);
     }
